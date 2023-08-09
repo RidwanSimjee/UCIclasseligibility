@@ -14,7 +14,7 @@ def grab_local_file() -> list:
     return text
 
 
-def finding_compsci_courses(courses: list) -> list:
+def filtering_compsci_courses(courses: list) -> list:
     """Takes out compsci courses from all course list, removes unnecessary information, and returns a new list of filtered dictionaries """
     compsci_courses = dict()
     for course in courses:
@@ -25,8 +25,9 @@ def finding_compsci_courses(courses: list) -> list:
     return compsci_courses
 
 def prereqs() -> None:
+    """Collects the information on what courses the user has already taken. Still needs ability to redact a course."""
     user_prereqs = set()
-    print(prereq_set)
+    print(sorted(prereq_set))
     print("\nSelect the classes that you have already taken, seperated by commas. (in the form: CSE 1,I&C SCI 2,COMPSCI 3, etc..)")
     prereq_input = input().upper()
     while prereq_input != "F":
@@ -37,17 +38,41 @@ def prereqs() -> None:
             else:
                 user_prereqs.add(inputted_prereq)
         print("\nChosen classes:")
-        print(user_prereqs)
+        print(sorted(user_prereqs))
         print("\nNon-chosen classes:")
-        print(prereq_set - user_prereqs)
+        print(sorted(prereq_set - user_prereqs))
         print("\nIs that all? Choose more completed courses or type \"f\" when finished.")
         prereq_input = input().upper()
 
+def offer_course_suggestions(compsci_courses) -> None:
+    for cs_course in compsci_courses:
+        print(compsci_courses[cs_course]['prerequisite_tree'])
+
+def recursive_prerequisite_breakdown(prereq_tree) -> bool:
+    if prereq_tree.strip() == '':
+        return True
+    else: #{"AND": ["I&C SCI 33", "I&C SCI 61", {"OR": ["MATH 3A", "I&C SCI 6N"]}]}
+        prereq_tree = prereq_tree.split('{') #['"AND": ["I&C SCI 33", "I&C SCI 61",' , '"OR": ["MATH 3A", "I&C SCI 6N"]}]}']
+    current = prereq_tree[len(prereq_tree)-1] # '"OR": ["MATH 3A", "I&C SCI 6N"]}]}'
+    elements = current[current.index('[') + 1:current.index(']')].split(',')
+    if current.startswith("\"OR\""):
+        for element in elements:
+            if element.strip().strip('\"') in prereq_set:
+                return True
+        return False
+    elif current.startswith("\"AND\""):
+        for element in elements:
+            if element.strip().strip('\"') not in prereq_set:
+                return False
+        return True
+
+
+
 def main():
-#    for course in finding_compsci_courses(grab_local_file()).items():
-#        print(course)
-    finding_compsci_courses(grab_local_file())
-    prereqs()
+#    for course in filtering_compsci_courses(grab_local_file()):
+#       print(course)
+    offer_course_suggestions(filtering_compsci_courses(grab_local_file()))
+ #   prereqs()
 
 if __name__ == "__main__":
     main()
