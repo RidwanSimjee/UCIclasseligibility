@@ -1,17 +1,7 @@
-import requests
+import scraping
 import json
 
 prereq_set = set()
-def make_api_call() -> list:
-    """Makes the api call to peterportal for the current list of all courses and returns the list of dictionaries"""
-    response = requests.get("https://api.peterportal.org/rest/v0/courses/all")
-    return response.json()
-
-def grab_local_file() -> list:
-    """Gets the local .txt file in the same format as the api call (to not strain the api while building this application)"""
-    with open('all_courses.json', 'r', encoding = 'utf-8') as local_file:
-        text = json.loads(local_file.read())
-    return text
 
 
 def filtering_compsci_courses(courses: list) -> list:
@@ -44,11 +34,28 @@ def prereqs() -> None:
         print("\nIs that all? Choose more completed courses or type \"f\" when finished.")
         prereq_input = input().upper()
 
-def offer_course_suggestions(compsci_courses) -> None:
-    for cs_course in compsci_courses:
-        print(compsci_courses[cs_course]['prerequisite_tree'])
+def offer_course_suggestions(prereq_tree) -> None:
+    if prereq_tree.strip() == '': return True
+    else: recursive_prerequisite_breakdown(json.loads(prereq_tree))
 
-def recursive_prerequisite_breakdown(prereq_tree) -> bool:
+def recursive_prerequisite_breakdown(prereq_tree: dict|bool) -> bool:
+    if 'AND' in prereq_tree:
+        for branch in prereq_tree['AND']:
+            if type(branch) == dict:
+                branch = recursive_prerequisite_breakdown(branch)
+            if (type(branch) == str and branch not in prereq_set) or (type(branch) == bool and not branch):
+                return False
+        return True
+    elif 'OR' in prereq_tree:
+        for branch in prereq_tree['OR']:
+            if type(branch) == dict:
+                branch = recursive_prerequisite_breakdown(branch)
+            if (type(branch) == str and branch in prereq_set) or (type(branch) == bool and branch):
+                return True
+        return False
+
+
+    """
     if prereq_tree.strip() == '':
         return True
     else: #{"AND": ["I&C SCI 33", "I&C SCI 61", {"OR": ["MATH 3A", "I&C SCI 6N"]}]}
@@ -65,7 +72,7 @@ def recursive_prerequisite_breakdown(prereq_tree) -> bool:
             if element.strip().strip('\"') not in prereq_set:
                 return False
         return True
-
+    """
 
 
 def main():
